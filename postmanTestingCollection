@@ -1,0 +1,211 @@
+{
+  "info": {
+    "name": "Ride App API Test Collection",
+    "description": "User, Driver, Vehicle and Booking API tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "userToken", "value": "" },
+    { "key": "driverToken", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "driverId", "value": "" },
+    { "key": "vehicleId", "value": "" },
+    { "key": "bookingId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "User Register",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/auth/register-user",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.user@test.com\",\n  \"password\": \"password123\",\n  \"phone\": \"9876543210\"\n}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "var res = pm.response.json();",
+            "pm.environment.set('userId', res._id);"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "User Login",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/auth/login-user",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john.user@test.com\",\n  \"password\": \"password123\"\n}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "var res = pm.response.json();",
+            "pm.environment.set('userToken', res.access_token);"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "User Update",
+      "request": {
+        "method": "PATCH",
+        "url": "{{baseUrl}}/users/update",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{userToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Jonathan\",\n  \"lastName\": \"Doe-Updated\",\n  \"phone\": \"9876543211\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Driver Register",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/auth/register-driver",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Mike Johnson\",\n  \"email\": \"mike.driver@test.com\",\n  \"password\": \"driver123\",\n  \"phone\": \"8765432109\",\n  \"licenseNumber\": \"DL123456789\",\n  \"termsAccepted\": true\n}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "var res = pm.response.json();",
+            "pm.environment.set('driverId', res._id);"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "Driver Login",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/auth/login-driver",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"mike.driver@test.com\",\n  \"password\": \"driver123\"\n}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "var res = pm.response.json();",
+            "pm.environment.set('driverToken', res.access_token);"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "Create Vehicle",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/drivers/vehicles",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{driverToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"make\": \"Toyota\",\n  \"model\": \"Camry\",\n  \"year\": 2023,\n  \"seats\": 5,\n  \"licensePlate\": \"ABC123\",\n  \"vehicleType\": \"Sedan\",\n  \"vehicleClass\": \"Comfort\",\n  \"baseFare\": 50,\n  \"perKilometerRate\": 15,\n  \"minimumFare\": 100,\n  \"waitingCharge\": 5\n}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "var res = pm.response.json();",
+            "pm.environment.set('vehicleId', res._id);"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "Create Booking",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/drivers/bookings",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{driverToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"userId\": \"{{userId}}\",\n  \"pickupLocation\": {\n    \"address\": \"Downtown Station\",\n    \"latitude\": 40.7128,\n    \"longitude\": -74.006\n  },\n  \"dropoffLocation\": {\n    \"address\": \"Airport Terminal\",\n    \"latitude\": 40.7761,\n    \"longitude\": -73.8735\n  },\n  \"estimatedDistance\": 15.5,\n  \"estimatedFare\": 250\n}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "var res = pm.response.json();",
+            "pm.environment.set('bookingId', res._id);"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "Accept Booking",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/drivers/bookings/{{bookingId}}/accept",
+        "header": [{ "key": "Authorization", "value": "Bearer {{driverToken}}" }]
+      }
+    },
+    {
+      "name": "Start Ride",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/drivers/bookings/{{bookingId}}/start",
+        "header": [{ "key": "Authorization", "value": "Bearer {{driverToken}}" }]
+      }
+    },
+    {
+      "name": "Complete Ride",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/drivers/bookings/{{bookingId}}/complete",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{driverToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"actualDistance\": 15.8,\n  \"actualFare\": 260\n}"
+        }
+      }
+    },
+    {
+      "name": "Rate User",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/drivers/bookings/{{bookingId}}/rate-user",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{driverToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rating\": 5,\n  \"review\": \"Great passenger\"\n}"
+        }
+      }
+    }
+  ]
+}
