@@ -21,6 +21,7 @@ async function bootstrap() {
     'http://www.kerides.com.s3-website.ap-south-1.amazonaws.com',
     'https://kerides.com',
     'https://d1wl66jz3nx0ag.cloudfront.net',
+    'https://d17cga1n7nx3ua.cloudfront.net'
   ];
 
   app.enableCors({
