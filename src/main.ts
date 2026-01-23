@@ -12,8 +12,30 @@ async function bootstrap() {
   const nodeEnv = process.env.NODE_ENV || 'development';
 
   // Enable CORS
+  // app.enableCors({
+  //   origin: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(','),
+  //   credentials: true,
+  // });
+    const allowedOrigins = [
+    'http://localhost:5173',
+    'http://www.kerides.com.s3-website.ap-south-1.amazonaws.com',
+    'https://kerides.com',
+    'https://d1wl66jz3nx0ag.cloudfront.net',
+  ];
+
   app.enableCors({
-    origin: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(','),
+    origin: (origin, callback) => {
+      // allow server-to-server / curl / postman
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   });
 
