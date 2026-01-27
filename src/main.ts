@@ -16,28 +16,18 @@ async function bootstrap() {
   //   origin: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(','),
   //   credentials: true,
   // });
-    const allowedOrigins = [
+    app.enableCors({
+  origin: [
     'http://localhost:5173',
     'http://www.kerides.com.s3-website.ap-south-1.amazonaws.com',
     'https://kerides.com',
     'https://d17cga1n7nx3ua.cloudfront.net',
-  ];
+  ],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+});
 
-  app.enableCors({
-    origin: (origin, callback) => {
-      // allow server-to-server / curl / postman
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-  });
 
   // Global exception filter
   app.useGlobalFilters(new GlobalExceptionFilter());

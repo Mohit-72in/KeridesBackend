@@ -10,22 +10,15 @@ async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     const port = process.env.PORT || 3000;
     const nodeEnv = process.env.NODE_ENV || 'development';
-    const allowedOrigins = [
-        'http://localhost:5173',
-        'http://www.kerides.com.s3-website.ap-south-1.amazonaws.com',
-        'https://kerides.com',
-        'https://d17cga1n7nx3ua.cloudfront.net',
-    ];
     app.enableCors({
-        origin: (origin, callback) => {
-            if (!origin) {
-                return callback(null, true);
-            }
-            if (allowedOrigins.includes(origin)) {
-                return callback(null, true);
-            }
-            return callback(new Error('Not allowed by CORS'));
-        },
+        origin: [
+            'http://localhost:5173',
+            'http://www.kerides.com.s3-website.ap-south-1.amazonaws.com',
+            'https://kerides.com',
+            'https://d17cga1n7nx3ua.cloudfront.net',
+        ],
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true,
     });
     app.useGlobalFilters(new global_exception_filter_1.GlobalExceptionFilter());
