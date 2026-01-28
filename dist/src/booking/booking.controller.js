@@ -50,6 +50,13 @@ let BookingController = class BookingController {
         if (!createBookingDto.distance?.value || createBookingDto.distance.value <= 0) {
             throw new common_1.BadRequestException('Invalid distance calculation');
         }
+        const estimate = await this.bookingService.estimateFare(createBookingDto.distance.value, createBookingDto.duration.value, createBookingDto.selectedVehicleId, createBookingDto.selectedDriverId);
+        const calculatedFare = estimate?.estimatedFare ?? 0;
+        if (calculatedFare <= 0) {
+            throw new common_1.BadRequestException('Invalid fare amount. Server could not compute a fare from the provided distance/duration.');
+        }
+        createBookingDto.price = createBookingDto.price || {};
+        createBookingDto.price.total = calculatedFare;
         const result = await this.bookingService.createBooking(req.user.id, createBookingDto);
         console.log('🔵 [BOOKING CONTROLLER] Booking created, returning response');
         return result;

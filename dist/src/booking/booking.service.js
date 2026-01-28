@@ -21,7 +21,6 @@ const driver_schema_1 = require("../schemas/driver.schema");
 const vehicle_schema_1 = require("../schemas/vehicle.schema");
 const user_schema_1 = require("../schemas/user.schema");
 const geolocation_util_1 = require("../common/utils/geolocation.util");
-const fare_util_1 = require("../common/utils/fare.util");
 const driver_notification_service_1 = require("../common/services/driver-notification.service");
 const mail_service_1 = require("../common/services/mail.service");
 const DEFAULT_NEARBY_DRIVERS_RADIUS_KM = parseFloat(process.env.NEARBY_DRIVERS_RADIUS_KM || '5');
@@ -46,30 +45,22 @@ let BookingService = class BookingService {
         this.mailService = mailService;
     }
     calculateBookingFare(distanceInMeters, durationInSeconds, vehicleData) {
-        const distanceInKm = distanceInMeters / 1000;
-        if (vehicleData?.details?.fareStructure) {
-            const fareStructure = vehicleData.details.fareStructure;
-            return (0, fare_util_1.calculateFare)({
-                distanceInKm,
-                durationInSeconds,
-                fareStructure: {
-                    minimumFare: fareStructure.minimumFare ?? DEFAULT_MINIMUM_FARE,
-                    perKilometerRate: fareStructure.perKilometerRate ?? DEFAULT_PER_KM_RATE,
-                    waitingChargePerMinute: fareStructure.waitingChargePerMinute ?? DEFAULT_WAITING_CHARGE_PER_MIN,
-                },
-                baseFare: 0,
-            });
+        const distanceInKm = Number(distanceInMeters ?? 0) / 1000;
+        const rawFareStructure = vehicleData?.details?.fareStructure || {};
+        const perKilometerRate = (rawFareStructure.perKilometerRate ?? rawFareStructure.perKmRate) ??
+            DEFAULT_PER_KM_RATE;
+        const minimumFare = rawFareStructure.minimumFare ?? DEFAULT_MINIMUM_FARE;
+        const waitingChargePerMinute = (rawFareStructure.waitingChargePerMinute ?? rawFareStructure.waitingChargePerMin) ??
+            DEFAULT_WAITING_CHARGE_PER_MIN;
+        const baseFare = rawFareStructure.baseFare ?? 0;
+        const waitingMinutes = Math.max(0, Math.ceil(Number(durationInSeconds ?? 0) / 60));
+        const raw = baseFare + perKilometerRate * distanceInKm + waitingChargePerMinute * waitingMinutes;
+        const fare = Math.max(Number(raw.toFixed(2)), minimumFare || 0);
+        this.logger.debug(`[FareCalc] distanceMeters=${distanceInMeters}, distanceKm=${distanceInKm}, durationSec=${durationInSeconds}, perKm=${perKilometerRate}, baseFare=${baseFare}, waitingMin=${waitingChargePerMinute}, waitingMinutes=${waitingMinutes}, minimumFare=${minimumFare}, computed=${fare}`);
+        if (fare === 0) {
+            this.logger.warn(`[FareCalc] computed fare is 0 — verify vehicle/driver fare setup or input distance. distanceInKm=${distanceInKm}, perKilometerRate=${perKilometerRate}, base=${baseFare}, minFare=${minimumFare}`);
         }
-        return (0, fare_util_1.calculateFare)({
-            distanceInKm,
-            durationInSeconds,
-            fareStructure: {
-                minimumFare: DEFAULT_MINIMUM_FARE,
-                perKilometerRate: DEFAULT_PER_KM_RATE,
-                waitingChargePerMinute: DEFAULT_WAITING_CHARGE_PER_MIN,
-            },
-            baseFare: 0,
-        });
+        return fare;
     }
     generateOtp() {
         return Math.floor(1000 + Math.random() * 9000).toString();
@@ -196,7 +187,11 @@ let BookingService = class BookingService {
             }
             const calculatedFare = this.calculateBookingFare(createBookingDto.distance.value, createBookingDto.duration.value, vehicleData);
             const providedTotal = createBookingDto.price?.total;
-            const finalTotal = typeof providedTotal === 'number' && providedTotal > 0 ? providedTotal : calculatedFare;
+            let finalTotal = typeof providedTotal === 'number' && providedTotal > 0 ? providedTotal : calculatedFare;
+            if (!finalTotal || finalTotal <= 0) {
+                this.logger.warn('[BookingService] finalTotal <= 0, falling back to calculatedFare or minimum fare');
+                finalTotal = Math.max(calculatedFare, DEFAULT_MINIMUM_FARE);
+            }
             const bookingData = {
                 bookingId: bookingId,
                 userId,

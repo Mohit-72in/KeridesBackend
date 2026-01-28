@@ -68,6 +68,17 @@ export class BookingController {
             throw new BadRequestException('Invalid distance calculation');
         }
 
+        // compute server-side fare to avoid client manipulations and avoid a 0-fare rejection
+        const estimate = await this.bookingService.estimateFare(createBookingDto.distance.value, createBookingDto.duration.value, createBookingDto.selectedVehicleId, createBookingDto.selectedDriverId);
+        const calculatedFare = estimate?.estimatedFare ?? 0;
+
+        if (calculatedFare <= 0) {
+            throw new BadRequestException('Invalid fare amount. Server could not compute a fare from the provided distance/duration.');
+        }
+
+        createBookingDto.price = createBookingDto.price || {};
+        createBookingDto.price.total = calculatedFare;
+
         const result = await this.bookingService.createBooking(req.user.id, createBookingDto);
 
         console.log('🔵 [BOOKING CONTROLLER] Booking created, returning response');

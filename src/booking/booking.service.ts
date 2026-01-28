@@ -44,35 +44,35 @@ export class BookingService {
         durationInSeconds: number,
         vehicleData?: any,
     ): number {
-        const distanceInKm = distanceInMeters / 1000;
+        const distanceInKm = Number(distanceInMeters ?? 0) / 1000;
 
-        // If vehicle data is provided, use its fare structure
-        if (vehicleData?.details?.fareStructure) {
-            const fareStructure = vehicleData.details.fareStructure;
-            return calculateFare({
-                distanceInKm,
-                durationInSeconds,
-                fareStructure: {
-                    minimumFare: fareStructure.minimumFare ?? DEFAULT_MINIMUM_FARE,
-                    perKilometerRate: fareStructure.perKilometerRate ?? DEFAULT_PER_KM_RATE,
-                    waitingChargePerMinute: fareStructure.waitingChargePerMinute ?? DEFAULT_WAITING_CHARGE_PER_MIN,
-                },
-                baseFare: 0,
-            });
+        // Prefer vehicle-specific fare structure, otherwise fallback to defaults
+        const rawFareStructure = vehicleData?.details?.fareStructure || {};
+
+        // normalize common key names and fallbacks
+        const perKilometerRate =
+            (rawFareStructure.perKilometerRate ?? rawFareStructure.perKmRate) ??
+            DEFAULT_PER_KM_RATE;
+        const minimumFare = rawFareStructure.minimumFare ?? DEFAULT_MINIMUM_FARE;
+        const waitingChargePerMinute =
+            (rawFareStructure.waitingChargePerMinute ?? rawFareStructure.waitingChargePerMin) ??
+            DEFAULT_WAITING_CHARGE_PER_MIN;
+        const baseFare = rawFareStructure.baseFare ?? 0;
+
+        const waitingMinutes = Math.max(0, Math.ceil(Number(durationInSeconds ?? 0) / 60));
+
+        const raw = baseFare + perKilometerRate * distanceInKm + waitingChargePerMinute * waitingMinutes;
+        const fare = Math.max(Number(raw.toFixed(2)), minimumFare || 0);
+
+        // Debugging/logging to help find misconfigurations (driver/vehicle missing rates etc.)
+        this.logger.debug(`[FareCalc] distanceMeters=${distanceInMeters}, distanceKm=${distanceInKm}, durationSec=${durationInSeconds}, perKm=${perKilometerRate}, baseFare=${baseFare}, waitingMin=${waitingChargePerMinute}, waitingMinutes=${waitingMinutes}, minimumFare=${minimumFare}, computed=${fare}`);
+
+        // If everything zero-ish, warn so we can catch config issues quickly
+        if (fare === 0) {
+            this.logger.warn(`[FareCalc] computed fare is 0 — verify vehicle/driver fare setup or input distance. distanceInKm=${distanceInKm}, perKilometerRate=${perKilometerRate}, base=${baseFare}, minFare=${minimumFare}`);
         }
 
-        // Default fare calculation if no vehicle data
-        // This ensures consistent pricing even without specific vehicle selected
-        return calculateFare({
-            distanceInKm,
-            durationInSeconds,
-            fareStructure: {
-                minimumFare: DEFAULT_MINIMUM_FARE,
-                perKilometerRate: DEFAULT_PER_KM_RATE,
-                waitingChargePerMinute: DEFAULT_WAITING_CHARGE_PER_MIN,
-            },
-            baseFare: 0,
-        });
+        return fare;
     }
 
     /**
@@ -243,7 +243,15 @@ export class BookingService {
 
             // Prefer client-provided estimated fare if available (this is the price shown to user when selecting driver)
             const providedTotal = createBookingDto.price?.total;
-            const finalTotal = typeof providedTotal === 'number' && providedTotal > 0 ? providedTotal : calculatedFare;
+            let finalTotal = typeof providedTotal === 'number' && providedTotal > 0 ? providedTotal : calculatedFare;
+
+            // Ensure we never persist zero fare — prefer computed minimum fare if something is off
+            if (!finalTotal || finalTotal <= 0) {
+                this.logger.warn('[BookingService] finalTotal <= 0, falling back to calculatedFare or minimum fare');
+                // enforce at least vehicle/DEFAULT minimum via calculateBookingFare earlier; if still zero, set a configurable fallback
+                // e.g. finalTotal = Math.max(calculatedFare, DEFAULT_MINIMUM_FARE);
+                finalTotal = Math.max(calculatedFare, DEFAULT_MINIMUM_FARE);
+            }
 
             // Map DTO fields to schema fields
             const bookingData = {
@@ -677,7 +685,7 @@ export class BookingService {
                 return null;
             }
 
-            // Return booking with OTP visible to user (they share it with driver)
+            // Return booking with OTP visible to user (they share it with driver when driver arrives)
             return {
                 ...booking.toObject(),
                 // OTP is visible to user so they can share with driver when driver arrives
