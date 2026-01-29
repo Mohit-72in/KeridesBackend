@@ -82,12 +82,6 @@ export class BookingService {
         return Math.floor(1000 + Math.random() * 9000).toString();
     }
 
-    /**
-     * Generate unique booking ID
-     */
-    private generateBookingId(): string {
-        return `BK-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-    }
 
     /**
      * Validate and convert string to ObjectId safely
@@ -216,11 +210,9 @@ export class BookingService {
             console.log('📝 [BOOKING SERVICE] Creating booking for user:', userId);
             console.log('📝 [BOOKING SERVICE] Booking DTO:', JSON.stringify(createBookingDto, null, 2));
 
-            // Generate OTP and booking ID
+            // Generate OTP
             const rideOtp = this.generateOtp();
-            const bookingId = this.generateBookingId();
             console.log('📝 [BOOKING SERVICE] Generated OTP:', rideOtp);
-            console.log('📝 [BOOKING SERVICE] Generated Booking ID:', bookingId);
 
             // Format driver and vehicle data if provided
             let driverData: any = null;
@@ -255,7 +247,6 @@ export class BookingService {
 
             // Map DTO fields to schema fields
             const bookingData = {
-                bookingId: bookingId,
                 userId,
                 userInfo: {
                     _id: this.toObjectId(userId),
@@ -346,12 +337,12 @@ export class BookingService {
 
             const savedBooking = await booking.save();
             console.log('✅ [BOOKING SERVICE] Booking saved successfully:', savedBooking._id);
-            console.log('✅ [BOOKING SERVICE] Booking ID:', savedBooking.bookingId);
+            console.log('✅ [BOOKING SERVICE] Booking ID:', savedBooking._id.toString());
             console.log('✅ [BOOKING SERVICE] Full saved booking:', JSON.stringify(savedBooking.toObject(), null, 2));
 
             // Prepare booking data for notification
             const bookingNotificationData = {
-                bookingId: savedBooking.bookingId,
+                bookingId: savedBooking._id.toString(),
                 userId: savedBooking.userId,
                 userInfo: savedBooking.userInfo,
                 origin: savedBooking.origin,
@@ -398,7 +389,7 @@ export class BookingService {
                 }
             } else {
                 // Case 2: No driver selected - find and notify nearby drivers
-                this.logger.log(`🔔 [BOOKING SERVICE] No driver selected. Finding nearby drivers for booking ${savedBooking.bookingId}`);
+                this.logger.log(`🔔 [BOOKING SERVICE] No driver selected. Finding nearby drivers for booking ${savedBooking._id.toString()}`);
 
                 try {
                     const pickupLat = createBookingDto.origin.location.lat;
@@ -437,7 +428,7 @@ export class BookingService {
 
                                 // Skip drivers who already rejected this booking
                                 if (Array.isArray(savedBooking.rejectedDrivers) && savedBooking.rejectedDrivers.some((id: any) => id?.toString?.() === driver._id.toString())) {
-                                    this.logger.log(`⚠️ Skipping driver ${driver._id} who already rejected booking ${savedBooking.bookingId}`);
+                                    this.logger.log(`⚠️ Skipping driver ${driver._id} who already rejected booking ${savedBooking._id.toString()}`);
                                     failed++;
                                     continue;
                                 }
@@ -472,7 +463,7 @@ export class BookingService {
                             this.logger.warn(`⚠️ ${failed} drivers were not connected or were skipped. They will still see the booking when they poll the endpoint.`);
                         }
                     } else {
-                        this.logger.warn(`⚠️ No online drivers found within 5 KM radius for booking ${savedBooking.bookingId}`);
+                        this.logger.warn(`⚠️ No online drivers found within 5 KM radius for booking ${savedBooking._id.toString()}`);
                     }
                 } catch (notificationError) {
                     this.logger.error(`❌ Error notifying drivers about booking: ${notificationError.message}`);

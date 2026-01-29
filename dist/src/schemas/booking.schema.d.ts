@@ -1,7 +1,6 @@
 import { Document, Types } from 'mongoose';
 export type BookingDocument = Booking & Document;
 export declare class Booking {
-    bookingId: string;
     userId: string;
     userInfo: {
         _id?: Types.ObjectId;

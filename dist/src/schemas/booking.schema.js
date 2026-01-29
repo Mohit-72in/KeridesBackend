@@ -13,7 +13,6 @@ exports.BookingSchema = exports.Booking = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 let Booking = class Booking {
-    bookingId;
     userId;
     userInfo;
     origin;
@@ -71,10 +70,6 @@ let Booking = class Booking {
     cancelledAt;
 };
 exports.Booking = Booking;
-__decorate([
-    (0, mongoose_1.Prop)({ required: true, unique: true }),
-    __metadata("design:type", String)
-], Booking.prototype, "bookingId", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ type: mongoose_2.Types.ObjectId, ref: 'User', required: true }),
     __metadata("design:type", String)
@@ -463,4 +458,12 @@ exports.Booking = Booking = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Booking);
 exports.BookingSchema = mongoose_1.SchemaFactory.createForClass(Booking);
+exports.BookingSchema.set('toJSON', {
+    virtuals: true,
+    versionKey: false,
+    transform(_doc, ret) {
+        ret.id = String(ret._id);
+        delete ret._id;
+    },
+});
 //# sourceMappingURL=booking.schema.js.map

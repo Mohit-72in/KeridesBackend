@@ -65,9 +65,6 @@ let BookingService = class BookingService {
     generateOtp() {
         return Math.floor(1000 + Math.random() * 9000).toString();
     }
-    generateBookingId() {
-        return `BK-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-    }
     toObjectId(id) {
         if (!id) {
             this.logger.debug(`ℹ️ toObjectId received empty/undefined: ${id}`);
@@ -174,9 +171,7 @@ let BookingService = class BookingService {
             console.log('📝 [BOOKING SERVICE] Creating booking for user:', userId);
             console.log('📝 [BOOKING SERVICE] Booking DTO:', JSON.stringify(createBookingDto, null, 2));
             const rideOtp = this.generateOtp();
-            const bookingId = this.generateBookingId();
             console.log('📝 [BOOKING SERVICE] Generated OTP:', rideOtp);
-            console.log('📝 [BOOKING SERVICE] Generated Booking ID:', bookingId);
             let driverData = null;
             let vehicleData = null;
             if (createBookingDto.selectedDriverId) {
@@ -193,7 +188,6 @@ let BookingService = class BookingService {
                 finalTotal = Math.max(calculatedFare, DEFAULT_MINIMUM_FARE);
             }
             const bookingData = {
-                bookingId: bookingId,
                 userId,
                 userInfo: {
                     _id: this.toObjectId(userId),
@@ -279,10 +273,10 @@ let BookingService = class BookingService {
             console.log('📝 [BOOKING SERVICE] Booking model created');
             const savedBooking = await booking.save();
             console.log('✅ [BOOKING SERVICE] Booking saved successfully:', savedBooking._id);
-            console.log('✅ [BOOKING SERVICE] Booking ID:', savedBooking.bookingId);
+            console.log('✅ [BOOKING SERVICE] Booking ID:', savedBooking._id.toString());
             console.log('✅ [BOOKING SERVICE] Full saved booking:', JSON.stringify(savedBooking.toObject(), null, 2));
             const bookingNotificationData = {
-                bookingId: savedBooking.bookingId,
+                bookingId: savedBooking._id.toString(),
                 userId: savedBooking.userId,
                 userInfo: savedBooking.userInfo,
                 origin: savedBooking.origin,
@@ -321,7 +315,7 @@ let BookingService = class BookingService {
                 }
             }
             else {
-                this.logger.log(`🔔 [BOOKING SERVICE] No driver selected. Finding nearby drivers for booking ${savedBooking.bookingId}`);
+                this.logger.log(`🔔 [BOOKING SERVICE] No driver selected. Finding nearby drivers for booking ${savedBooking._id.toString()}`);
                 try {
                     const pickupLat = createBookingDto.origin.location.lat;
                     const pickupLng = createBookingDto.origin.location.lng;
@@ -343,7 +337,7 @@ let BookingService = class BookingService {
                                     continue;
                                 }
                                 if (Array.isArray(savedBooking.rejectedDrivers) && savedBooking.rejectedDrivers.some((id) => id?.toString?.() === driver._id.toString())) {
-                                    this.logger.log(`⚠️ Skipping driver ${driver._id} who already rejected booking ${savedBooking.bookingId}`);
+                                    this.logger.log(`⚠️ Skipping driver ${driver._id} who already rejected booking ${savedBooking._id.toString()}`);
                                     failed++;
                                     continue;
                                 }
@@ -375,7 +369,7 @@ let BookingService = class BookingService {
                         }
                     }
                     else {
-                        this.logger.warn(`⚠️ No online drivers found within 5 KM radius for booking ${savedBooking.bookingId}`);
+                        this.logger.warn(`⚠️ No online drivers found within 5 KM radius for booking ${savedBooking._id.toString()}`);
                     }
                 }
                 catch (notificationError) {

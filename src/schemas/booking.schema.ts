@@ -5,9 +5,6 @@ export type BookingDocument = Booking & Document;
 
 @Schema({ timestamps: true })
 export class Booking {
-    // Unique booking identifier
-    @Prop({ required: true, unique: true })
-    bookingId: string;
 
     // User Reference
     @Prop({ type: Types.ObjectId, ref: 'User', required: true })
@@ -473,3 +470,14 @@ export class Booking {
 }
 
 export const BookingSchema = SchemaFactory.createForClass(Booking);
+
+// Expose `id` as string and hide `_id` in JSON responses
+BookingSchema.set('toJSON', {
+    virtuals: true,
+    versionKey: false,
+    transform(_doc: any, ret: any) {
+        // Use `any` here to avoid TypeScript structural checks on the transformed object
+        ret.id = String(ret._id);
+        delete ret._id;
+    },
+});

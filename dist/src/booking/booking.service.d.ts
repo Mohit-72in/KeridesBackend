@@ -19,7 +19,6 @@ export declare class BookingService {
     constructor(bookingModel: Model<BookingDocument>, driverModel: Model<DriverDocument>, vehicleModel: Model<VehicleDocument>, userModel: Model<UserDocument>, notificationService: DriverNotificationService, mailService: MailService);
     private calculateBookingFare;
     private generateOtp;
-    private generateBookingId;
     private toObjectId;
     private formatDriverForBooking;
     private formatVehicleForBooking;
@@ -57,7 +56,6 @@ export declare class BookingService {
     }>;
     getUserCurrentBooking(userId: string): Promise<{
         rideOtp: string | undefined;
-        bookingId: string;
         userId: string;
         userInfo: {
             _id?: Types.ObjectId;

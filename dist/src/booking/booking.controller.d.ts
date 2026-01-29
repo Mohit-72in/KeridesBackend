@@ -15,7 +15,6 @@ export declare class BookingController {
     getUserBookings(req: any): Promise<any[]>;
     getUserCurrentBooking(req: any): Promise<{
         rideOtp: string | undefined;
-        bookingId: string;
         userId: string;
         userInfo: {
             _id?: import("mongoose").Types.ObjectId;
