@@ -31,6 +31,7 @@ async function bootstrap() {
         },
     }));
     app.use(new http_logging_middleware_1.HttpLoggingMiddleware().use);
+    app.setGlobalPrefix('api');
     await app.listen(port);
     logger.log(`✓ Server running on http://localhost:${port}`);
     logger.log(`✓ Environment: ${nodeEnv}`);

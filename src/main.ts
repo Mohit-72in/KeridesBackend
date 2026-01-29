@@ -47,6 +47,9 @@ async function bootstrap() {
   // HTTP logging middleware
   app.use(new HttpLoggingMiddleware().use);
 
+  // Use '/api' as global prefix to match frontend requests
+  app.setGlobalPrefix('api');
+
   await app.listen(port);
 
   logger.log(`✓ Server running on http://localhost:${port}`);

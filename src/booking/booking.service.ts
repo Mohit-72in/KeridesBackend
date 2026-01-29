@@ -732,8 +732,9 @@ export class BookingService {
             }
 
             booking.status = 'ACCEPTED';
-            booking.driverId = driverId as any;
-            booking.vehicleId = vehicleId as any;
+            // Ensure driverId and vehicleId are stored as ObjectId for consistent queries
+            booking.driverId = new Types.ObjectId(driverId) as any;
+            booking.vehicleId = vehicleId ? new Types.ObjectId(vehicleId) as any : undefined;
             booking.acceptedTime = new Date();
 
             // Store driver and vehicle details if not already stored
@@ -752,6 +753,7 @@ export class BookingService {
             }
 
             const savedBooking = await booking.save();
+            this.logger.log(`✅ Booking ${savedBooking._id.toString()} accepted by driver ${driverId}`);
 
             // Notify user by email about acceptance
             try {
